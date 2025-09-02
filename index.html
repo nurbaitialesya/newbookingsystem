@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <title>Rekod Tempahan</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: url('puo.jpeg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .form-container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      width: 450px;
+      text-align: center;
+    }
+
+    .form-container img {
+      width: 220px;
+      height: auto;
+      margin-bottom: 20px;
+    }
+
+    h2 { margin-bottom: 20px; font-size: 18px; }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .form-group {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      text-align: left;
+    }
+    .form-group label {
+      width: 120px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+
+    .form-group input[type="date"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    /* Slot Masa */
+    .title-left { text-align: left; margin-top: 20px; margin-bottom: 8px; }
+    #times {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+      text-align: left;
+    }
+    .time-slot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    /* Pilih Semua align kiri */
+    .select-all-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      justify-content: flex-start;
+      font-weight: normal;
+      text-align: left;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 18px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover { background: #0056b3; }
+
+    #status { margin-top: 12px; font-size: 14px; font-weight: bold; display: none; }
+    #status.success { color: green; display:block; }
+    #status.error { color: red; display:block; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <img src="logo.png" alt="Politeknik Logo">
+    <h2>Rekod Tempahan</h2>
+
+    <form id="bookingForm" autocomplete="off">
+      <input type="text" id="student_id" name="student_id" placeholder="Nombor Pelajar / Staff" required autofocus>
+
+      <select id="namabilik" name="namabilik" required>
+        <option value="" disabled selected>Pilih Nama Bilik</option>
+        <option value="A">Bilik A</option>
+        <option value="B">Bilik B</option>
+        <option value="C">Bilik C</option>
+      </select>
+
+      <select id="tujuan" name="tujuan" required>
+        <option value="" disabled selected>Pilih Tujuan</option>
+        <option value="Mesyuarat">Mesyuarat</option>
+        <option value="Pembentangan">Pembentangan</option>
+        <option value="Perbincangan">Perbincangan</option>
+        <option value="Latihan">Latihan</option>
+      </select>
+
+      <div class="form-group">
+        <label for="date_start">Tarikh Mula</label>
+        <input id="date_start" type="date" name="date_start" required>
+      </div>
+      <div class="form-group">
+        <label for="date_end">Tarikh Tamat</label>
+        <input id="date_end" type="date" name="date_end" required>
+      </div>
+
+      <h4 class="title-left">Pilih Slot Masa</h4>
+      <div id="times"></div>
+
+      <label class="select-all-wrapper">
+        <input type="checkbox" id="select_all"> Pilih Semua
+      </label>
+
+      <button type="submit">Hantar</button>
+    </form>
+    <p id="status"></p>
+  </div>
+
+<script>
+  const timeSlots = [
+    "08:30 - 09:00","09:00 - 10:00","10:00 - 11:00",
+    "11:00 - 12:00","12:00 - 13:00","13:00 - 14:00",
+    "14:00 - 15:00","15:00 - 16:00","16:00 - 17:00"
+  ];
+  const timesDiv = document.getElementById('times');
+  const selectAll = document.getElementById('select_all');
+
+  // Render slot masa
+  timeSlots.forEach(slot => {
+    const wrapper = document.createElement('label');
+    wrapper.className = 'time-slot';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.dataset.slot = slot;
+    wrapper.appendChild(cb);
+    wrapper.appendChild(document.createTextNode(slot));
+    timesDiv.appendChild(wrapper);
+  });
+
+  selectAll.addEventListener('change', () => {
+    const checked = selectAll.checked;
+    document.querySelectorAll('#times input[type=checkbox]:not(:disabled)')
+      .forEach(cb => cb.checked = checked);
+  });
+
+  // Local storage helpers
+  const STORAGE_KEY = 'booking_data_v2';
+  function loadBookings() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch (e) { return []; }
+  }
+  function saveBookings(arr) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  // Update slot disable ikut bilik & tarikh
+  function updateBookedSlots() {
+    document.querySelectorAll('#times input[type=checkbox]').forEach(cb => {
+      cb.disabled = false; cb.parentElement.style.opacity = '1';
+    });
+
+    const room = document.getElementById('namabilik').value;
+    const dateStart = document.getElementById('date_start').value;
+    if (!room || !dateStart) return;
+
+    const bookings = loadBookings();
+    const bookedSlots = [];
+    bookings.forEach(b => {
+      if (b.room_name === room && b.start_date === dateStart) {
+        if (b.time_slots) bookedSlots.push(...b.time_slots);
+      }
+    });
+
+    bookedSlots.forEach(slot => {
+      const cb = [...document.querySelectorAll('#times input[type=checkbox]')]
+        .find(x => x.dataset.slot === slot);
+      if (cb) {
+        cb.disabled = true; cb.checked = false;
+        cb.parentElement.style.opacity = '0.45';
+      }
+    });
+  }
+  document.getElementById('namabilik').addEventListener('change', updateBookedSlots);
+  document.getElementById('date_start').addEventListener('change', updateBookedSlots);
+
+  // 🔗 Google Sheets URL
+  const scriptURL = "https://script.google.com/macros/s/AKfycbxlWFR2DvOgnmQr2zPx3rhGgXsOonbGhnekAYmEYPaqwZqQa6KdIQFVegQ7O4jujIrENQ/exec";
+  const form = document.getElementById("bookingForm");
+  const statusBox = document.getElementById("status");
+
+  // Submit handler gabungan
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const studentId = document.getElementById('student_id').value.trim();
+    const room = document.getElementById('namabilik').value;
+    const tujuan = document.getElementById('tujuan').value;
+    const dateStart = document.getElementById('date_start').value;
+    const dateEnd = document.getElementById('date_end').value;
+    const selectedSlots = [...document.querySelectorAll('#times input[type=checkbox]:checked')]
+      .map(cb => cb.dataset.slot);
+
+    if (selectedSlots.length === 0) {
+      alert('Sila pilih sekurang-kurangnya satu slot masa.');
+      return;
+    }
+
+    // 1️⃣ Simpan ke localStorage
+    const bookings = loadBookings();
+    const booking = {
+      id: Date.now(),
+      student_id: studentId,
+      room_name: room,
+      tujuan: tujuan,
+      start_date: dateStart,
+      end_date: dateEnd,
+      time_slots: selectedSlots
+    };
+    bookings.push(booking);
+    saveBookings(bookings);
+
+    // 2️⃣ Hantar ke Google Sheets (guna FormData)
+    const formData = new FormData();
+    formData.append("student_id", studentId);
+    formData.append("room_name", room);
+    formData.append("tujuan", tujuan);
+    formData.append("start_date", dateStart);
+    formData.append("end_date", dateEnd);
+    formData.append("time_slots", selectedSlots.join(", "));
+
+    statusBox.textContent = "Menghantar...";
+    statusBox.className = "";
+
+    try {
+      const res = await fetch(scriptURL, { method: "POST", body: formData });
+      const msg = await res.text();
+
+      if (msg.includes("SUCCESS")) {
+        statusBox.textContent = "Tempahan berjaya direkodkan!";
+        statusBox.className = "success";
+
+        form.reset();
+        document.querySelectorAll('#times input[type=checkbox]').forEach(cb => cb.checked = false);
+        selectAll.checked = false;
+        updateBookedSlots();
+
+        setTimeout(() => { statusBox.style.display = "none"; }, 3000);
+      } else {
+        throw new Error(msg);
+      }
+    } catch (err) {
+      statusBox.textContent = "Ralat: " + err.message;
+      statusBox.className = "error";
+    }
+  });
+
+  updateBookedSlots();
+</script>
+</body>
+</html>
